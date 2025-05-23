@@ -1,0 +1,24 @@
+
+---
+
+### 📝 `NOTES.txt`
+
+```txt
+T-Shirt Design Studio - Developer Notes
+
+Frameworks & Libraries:
+- Vue.js v2
+- Fabric.js v4.6 for canvas manipulation
+
+Built with Vue.js 2 and Fabric.js 4.6
+- Added Canvas WITH T-shirt image
+- Upload and drag custom images/logos
+- Add and style text
+- Add undo/redo functionality
+- Save and download designs
+
+
+Known Limitations:
+- Not fully responsive on mobile
+- Text resizing might be inconsistent
+
