@@ -1,5 +1,3 @@
-# t-shirt-design-studio
-
 # T-Shirt Design Studio 🎨👕
 
 A web-based T-shirt design tool built with Vue.js 2 and Fabric.js 4.6. This project allows users to create simple custom T-shirt designs with drag-and-drop elements, images, text, and color options.
@@ -7,9 +5,10 @@ A web-based T-shirt design tool built with Vue.js 2 and Fabric.js 4.6. This proj
 ## 🚀 Features
 
 - Built with Vue.js 2 and Fabric.js 4.6
-- Upload and drag custom images/logos
-- Add and style text
-- Add images
+- Toolbar and Properties Panel
+- Upload and drag custom images from pc
+- Add Stickers & Random Images
+- Add and style text and you can chage the size, font-family, color
 - Save and download designs (PNG & PDF)
 
 
