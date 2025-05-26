@@ -22,19 +22,34 @@
       <button @click="toggleUnderline">Underline</button>
     </div>
 
-<!-- image properties if image selects by user -->
+    <!-- image properties if image selects by user -->
     <div v-else-if="imageSelected">
       <label>Opacity:
         <input type="range" min="0" max="1" step="0.1" v-model.number="opacity" @input="updateOpacity" />
       </label>
 
-      <label>Rotate : 
+      <label>Rotate :
         <input type="range" min="0" max="360" step="1" v-model.number="angle" @input="updateAngle" />
       </label>
-      
+
+      <label>Brightness</label>
+      <input type="range" min="-1" max="1" step="0.1" v-model="brightness" @input="applyFilters" />
+
+      <label>Contrast</label>
+      <input type="range" min="-1" max="1" step="0.1" v-model="contrast" @input="applyFilters" />
+
+      <label>Blur</label>
+      <input type="range" min="0" max="1" step="0.01" v-model="blur" @input="applyFilters" />
+
+      <label>Saturation</label>
+      <input type="range" min="-1" max="1" step="0.1" v-model="saturation" @input="applyFilters" />
+
+
+      <label><input type="checkbox" v-model="grayscale" @change="applyFilters" /> Grayscale</label>
+
     </div>
 
-<!-- shape properties if shape selects by user -->
+    <!-- shape properties if shape selects by user -->
     <div v-else-if="shapeSelected">
       <label>Fill Color:
         <input type="color" v-model="fill" @input="updateFill" />
@@ -68,7 +83,12 @@ export default {
       stroke: '#000000',
       strokeWidth: 1,
       angle: 0,
-      
+      brightness: 0,
+      contrast: 0,
+      grayscale: false,
+      blur: 0,
+      saturation: 0,
+
     };
   },
   computed: {
@@ -123,8 +143,29 @@ export default {
         this.strokeWidth = this.active.strokeWidth || 1;
         console.log('Shape properties loaded');
       }
-      console.log('fill value:', this.active.fill);
+    },
 
+    applyFilters() {
+      if (!this.imageSelected || !this.active) return;
+
+      const filters = [];
+
+      if (this.brightness !== 0)
+        filters.push(new fabric.Image.filters.Brightness({ brightness: this.brightness }));
+      if (this.contrast !== 0)
+        filters.push(new fabric.Image.filters.Contrast({ contrast: this.contrast }));
+      if (this.blur > 0)
+        filters.push(new fabric.Image.filters.Blur({ blur: this.blur }));
+        if (this.saturation !== 0)
+        filters.push(new fabric.Image.filters.Saturation({ saturation: this.saturation }));
+      if (this.grayscale)
+        filters.push(new fabric.Image.filters.Grayscale());
+
+      this.active.filters = filters;
+      this.active.applyFilters();
+      this.canvas.renderAll();
+
+      console.log('Filters applied:', filters);
     },
 
     // Updates text font size
@@ -193,9 +234,9 @@ export default {
       }
     },
 
-    updateAngle(){
-      if(this.imageSelected){
-        this,this.active.set('angle', this.angle);
+    updateAngle() {
+      if (this.imageSelected) {
+        this, this.active.set('angle', this.angle);
         this.canvas.renderAll();
       }
     },
@@ -237,16 +278,19 @@ export default {
   background: #f9f9f9;
   border-left: 1px solid #ccc;
 }
+
 label {
   display: block;
   margin: 10px 0;
 }
+
 input[type="color"],
 select,
 input[type="number"],
 input[type="range"] {
   width: 100%;
 }
+
 button {
   margin: 5px 5px 0 0;
   padding: 5px 10px;
