@@ -9,7 +9,7 @@ A web-based T-shirt design tool built with Vue.js 2 and Fabric.js 4.6. This proj
 - Upload and drag custom images from pc
 - Add Stickers & Random Images
 - Add and style text and you can chage the size, font-family, color
-- You can chnage Contrast, Brightness, Blur,Saturation, Greyscale of the image.
+- You can change Contrast, Brightness, Blur,Saturation, Greyscale of the image.
 - Save and download designs (PNG & PDF)
 
 

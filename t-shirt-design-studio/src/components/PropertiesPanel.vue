@@ -1,5 +1,6 @@
 <template>
-  <div class="panel">
+  <div v-if="active" class="panel">
+    <div class="panel">
     <h3>Properties</h3>
 
     <!-- text properties if text selects by user -->
@@ -67,6 +68,8 @@
       <p>No shape selected.</p>
     </div>
   </div>
+</div>
+
 </template>
 
 <script>
