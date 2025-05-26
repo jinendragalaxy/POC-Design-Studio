@@ -65,13 +65,22 @@ export default {
     setCanvas(c) {
       this.canvas = c;
 
+      fabric.Object.prototype.toObject = (function(toObject) {
+    return function() {
+      return fabric.util.object.extend(toObject.call(this), {
+        selectable: this.selectable,
+        lockMovementX: this.lockMovementX,
+        lockMovementY: this.lockMovementY,
+        evented: this.evented,
+        hasBorders: this.hasBorders,
+        hasControls: this.hasControls,
+      });
+    };
+  })(fabric.Object.prototype.toObject);
       // Setup event listeners
       this.canvas.on('object:added', () => this.saveState());
       this.canvas.on('object:modified', () => this.saveState());
       this.canvas.on('object:removed', () => this.saveState());
-
-
-      // Wait for default items (rectangle, t-shirt) to be added
 
       setTimeout(() => {
         this.saveState(true); // Save only after default objects are added

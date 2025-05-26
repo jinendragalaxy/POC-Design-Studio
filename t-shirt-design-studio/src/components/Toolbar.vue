@@ -290,6 +290,7 @@ export default {
       if (!this.canvas || !this.clipRect) return;
       // Hide the clip area temporary
       this.clipRect.visible = false;
+      this.clipRect.excludeFromExport = true;
       this.canvas.renderAll();
       // Get the data URL of the canvas without clip area
       const dataURL = this.canvas.toDataURL({ format: "png" });
