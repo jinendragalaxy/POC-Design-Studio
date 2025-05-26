@@ -171,14 +171,14 @@ export default {
           shape = new fabric.Rect({
             width: 100,
             height: 60,
-            fill: "lightblue",
+            fill: "#ADD8E6",
             ...shapeProps,
           });
           break;
         case "circle":
           shape = new fabric.Circle({
             radius: 50,
-            fill: "lightgreen",
+            fill: "#2ecc71",
             ...shapeProps,
           });
           break;
@@ -186,7 +186,7 @@ export default {
           shape = new fabric.Triangle({
             width: 100,
             height: 100,
-            fill: "pink",
+            fill: "#e74c3c",
             ...shapeProps,
           });
           break;
@@ -194,7 +194,7 @@ export default {
           shape = new fabric.Ellipse({
             rx: 75,
             ry: 45,
-            fill: "orange",
+            fill: "#f1c40f",
             ...shapeProps,
           });
           break;

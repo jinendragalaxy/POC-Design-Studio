@@ -123,6 +123,8 @@ export default {
         this.strokeWidth = this.active.strokeWidth || 1;
         console.log('Shape properties loaded');
       }
+      console.log('fill value:', this.active.fill);
+
     },
 
     // Updates text font size
