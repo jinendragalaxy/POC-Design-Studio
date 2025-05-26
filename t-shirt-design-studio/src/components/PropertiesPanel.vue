@@ -84,7 +84,7 @@ export default {
     shapeSelected() {
       return (
         this.active &&
-        ['rect', 'circle', 'triangle'].includes(this.active.type)
+        ['rect', 'circle', 'triangle', 'ellipse'].includes(this.active.type)
       );
     }
   },

@@ -163,7 +163,7 @@ export default {
       }
 
       const { left, top } = this.clipRect;
-      const shapeProps = { left: left + 10, top: top + 10 };
+      const shapeProps = { left: left + 10, top: top + 10, stroke: '#000', strokeWidth: 1};
 
       let shape;
       switch (type) {
