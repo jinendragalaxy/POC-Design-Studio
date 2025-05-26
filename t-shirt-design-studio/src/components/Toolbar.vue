@@ -53,6 +53,26 @@
       </div>
     </div>
 
+    <!-- Drawing Tools Sections -->
+    <!-- Add this section to your template -->
+    <div class="group">
+      <div class="group-header" @click="toggleSection('drawing')">
+        <h4>Drawing Tools</h4>
+        <span>{{ openSections.drawing ? '▲' : '▼' }}</span>
+      </div>
+      <div v-show="openSections.drawing" class="group-body">
+        <button @click="enableFreeDrawing">Pencil</button>
+        <button @click="disableFreeDrawing">Stop Drawing</button>
+        <div class="drawing-options" v-if="isDrawingEnabled">
+          <label>Brush Size:
+            <input type="range" v-model="brushSize" min="1" max="50" @input="updateBrushSize">
+          </label>
+          <label>Brush Color:
+            <input type="color" v-model="brushColor" @input="updateBrushColor">
+          </label>
+        </div>
+      </div>
+    </div>
     <!-- Object Controls -->
     <div class="group">
       <div class="group-header" @click="toggleSection('controls')">
@@ -77,7 +97,7 @@
         <button @click="downloadPDF">Export PDF</button>
       </div>
     </div>
-  
+
     <!-- Popup component for sticker -->
     <!-- <Popup :visible="showStickerPopup" title="Choose a Sticker" @close="showStickerPopup = false">
       <div class="sticker-list">
@@ -110,7 +130,12 @@ export default {
         images: false,
         controls: false,
         export: false,
-      }
+        drawing: false,
+      },
+      isDrawingEnabled: false,
+      brushSize: 5,
+      brushColor: '#000000',
+      freeDrawingBrush: null
     };
   },
   props: {
@@ -124,7 +149,7 @@ export default {
       type: Boolean,
       default: false,
     },
-    
+
   },
   components: {
     Popup
@@ -163,7 +188,7 @@ export default {
       }
 
       const { left, top } = this.clipRect;
-      const shapeProps = { left: left + 10, top: top + 10, stroke: '#000', strokeWidth: 1};
+      const shapeProps = { left: left + 10, top: top + 10, stroke: '#000', strokeWidth: 1 };
 
       let shape;
       switch (type) {
@@ -382,8 +407,50 @@ export default {
     //   },{crossOrigin: 'anonymous'});
     // },
 
+    //Drwaing methods 
+    enableFreeDrawing() {
+      if (!this.canvas) return;
 
+      this.isDrawingEnabled = true;
+      this.canvas.isDrawingMode = true;
+
+      // Create or update the free drawing brush
+      this.freeDrawingBrush = this.canvas.freeDrawingBrush || new fabric.PencilBrush(this.canvas);
+      this.freeDrawingBrush.width = this.brushSize;
+      this.freeDrawingBrush.color = this.brushColor;
+      this.canvas.freeDrawingBrush = this.freeDrawingBrush;
+
+      // Save state when drawing completes
+      this.canvas.on('path:created', this.handlePathCreated);
+    },
+
+    disableFreeDrawing() {
+      if (!this.canvas) return;
+
+      this.isDrawingEnabled = false;
+      this.canvas.isDrawingMode = false;
+      this.canvas.off('path:created', this.handlePathCreated);
+    },
+
+    updateBrushSize() {
+      if (this.freeDrawingBrush) {
+        this.freeDrawingBrush.width = parseInt(this.brushSize);
+      }
+    },
+
+    updateBrushColor() {
+      if (this.freeDrawingBrush) {
+        this.freeDrawingBrush.color = this.brushColor;
+      }
+    },
+
+    handlePathCreated() {
+      // Save state after each drawn path
+      this.$emit('save-state');
+    }
   },
+
+
 };
 </script>
 <style scoped>
@@ -463,5 +530,31 @@ button:hover:not(:disabled) {
 /* File input */
 input[type="file"] {
   margin-top: 6px;
+}
+
+/* Add to your style section */
+.drawing-options {
+  margin-top: 10px;
+  padding: 10px;
+  background: #f0f0f0;
+  border-radius: 5px;
+}
+
+.drawing-options label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #555;
+}
+
+.drawing-options input[type="range"] {
+  width: 100%;
+}
+
+.drawing-options input[type="color"] {
+  width: 100%;
+  height: 30px;
+  padding: 0;
+  border: 1px solid #ccc;
 }
 </style>
