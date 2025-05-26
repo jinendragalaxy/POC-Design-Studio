@@ -32,6 +32,7 @@ export default {
 
       // Creating a transparent rectangular clip area
       this.clipArea = new fabric.Rect({
+        id: 'clip-rect',
         left: clipLeft,
         top: clipTop,
         width: clipWidth,

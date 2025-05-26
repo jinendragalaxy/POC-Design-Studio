@@ -1,12 +1,7 @@
 <template>
   <div class="studio-layout">
-    <Toolbar 
-    :canvas="canvas" 
-    :clipRect="clipRect" 
-    @show-random-popup="showRandomPopup = true"
-    @show-sticker-popup="showStickerPopup = true" 
-    @undo="undo" 
-    @redo="redo" />
+    <Toolbar :canvas="canvas" :clipRect="clipRect" @show-random-popup="showRandomPopup = true"
+      @show-sticker-popup="showStickerPopup = true" @undo="undo" @redo="redo" />
 
     <!-- Popup component for sticker -->
     <Popup :visible="showStickerPopup" title="Choose a Sticker" @close="showStickerPopup = false">
@@ -75,27 +70,34 @@ export default {
       this.canvas.on('object:modified', () => this.saveState());
       this.canvas.on('object:removed', () => this.saveState());
 
+
       // Wait for default items (rectangle, t-shirt) to be added
+
       setTimeout(() => {
         this.saveState(true); // Save only after default objects are added
       }, 300); // adjust time as needed
     },
 
+    restoreClipRectLock() {
+      const objects = this.canvas.getObjects();
+      const clip = objects.find(obj => obj.id === 'clip-rect');
+      if (clip) {
+        clip.set({
+          selectable: false,
+          evented: false,
+          hasBorders: false,
+          hasControls: false,
+          lockMovementX: true,
+          lockMovementY: true,
+        });
+      }
+    },
+
+
+
+
     saveState(isInitial = false) {
       if (!this.canvas || this.isRestoring) return;
-
-      // Normalize all objects
-      this.canvas.getObjects().forEach(obj => {
-        if (obj.scaleX !== 1 || obj.scaleY !== 1) {
-          obj.set({
-            width: obj.width * obj.scaleX,
-            height: obj.height * obj.scaleY,
-            scaleX: 1,
-            scaleY: 1
-          });
-          obj.setCoords(); // Update coordinates after resizing
-        }
-      });
 
       const json = this.canvas.toJSON();
 
@@ -109,6 +111,7 @@ export default {
       }
 
       this.updateUndoRedoState();
+
     },
 
 
@@ -122,6 +125,7 @@ export default {
       // Emit these to Toolbar
       this.$emit('update:canUndo', this.canUndo);
       this.$emit('update:canRedo', this.canRedo);
+
     },
 
 
@@ -138,6 +142,8 @@ export default {
         this.canvas.renderAll();
         this.isRestoring = false;
         this.updateUndoRedoState();
+        this.restoreClipRectLock(this.canvas);
+
       });
     },
 
@@ -152,6 +158,8 @@ export default {
         this.canvas.renderAll();
         this.isRestoring = false;
         this.updateUndoRedoState();
+        this.restoreClipRectLock(this.canvas);
+
       });
     },
 
@@ -196,19 +204,43 @@ export default {
     handleKeyPress(e) {
       if (!this.canvas) return;
 
+      // DUPLICATE with Ctrl+D or Cmd+D
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
+        e.preventDefault(); // prevent browser bookmark shortcut
+        const activeObjects = this.canvas.getActiveObjects();
+
+        if (activeObjects.length) {
+          activeObjects.forEach(original => {
+            original.clone(clone => {
+              clone.set({
+                left: original.left + 20,
+                top: original.top + 20,
+                evented: true
+              });
+              this.canvas.add(clone);
+            });
+          });
+          this.canvas.discardActiveObject();
+          this.canvas.requestRenderAll();
+          console.log("Object(s) Duplicated");
+        }
+      }
+
+      // DELETE with Delete key
       if (e.key === 'Delete') {
         const activeObjects = this.canvas.getActiveObjects();
 
         if (activeObjects.length) {
           activeObjects.forEach(obj => {
-            this.canvas.remove(obj)
-            console.log("Object Remove");
-          })
+            this.canvas.remove(obj);
+          });
           this.canvas.discardActiveObject();
-          this.canvas.requestRenderAll()
+          this.canvas.requestRenderAll();
+          console.log("Object(s) Removed");
         }
       }
     },
+
 
     handleKeyDown(e) {
       // Undo: Ctrl + Z or Cmd + Z
@@ -223,11 +255,13 @@ export default {
       }
     },
   },
+
+
   mounted() {
     window.addEventListener('keydown', this.handleKeyPress);
     window.addEventListener('keydown', this.handleKeyDown);
   },
-  
+
   beforeDestroy() {
     window.removeEventListener('keydown', this.handleKeyPress)
     window.removeEventListener('keydown', this.handleKeyDown)
