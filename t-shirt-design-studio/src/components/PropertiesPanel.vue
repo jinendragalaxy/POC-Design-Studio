@@ -1,74 +1,83 @@
 <template>
   <div v-if="active" class="panel">
     <div class="panel">
-    <h3>Properties</h3>
+      <h3>Properties</h3>
 
-    <!-- text properties if text selects by user -->
-    <div v-if="textSelected">
-      <label>Font Size:
-        <input type="number" v-model.number="fontSize" @change="updateFontSize" />
-      </label>
-      <label>Font Color:
-        <input type="color" v-model="color" @input="updateColor" />
-      </label>
-      <label>Font Family:
-        <select v-model="fontFamily" @change="updateFontFamily">
-          <option value="Arial">Arial</option>
-          <option value="Courier">Courier</option>
-          <option value="Times New Roman">Times New Roman</option>
-        </select>
-      </label>
-      <button @click="toggleBold">Bold</button>
-      <button @click="toggleItalic">Italic</button>
-      <button @click="toggleUnderline">Underline</button>
-    </div>
+      <!-- text properties if text selects by user -->
+      <div v-if="textSelected">
+        <label>Font Size:
+          <input type="number" v-model.number="fontSize" @change="updateFontSize" />
+        </label>
+        <label>Font Color:
+          <input type="color" v-model="color" @input="updateColor" />
+        </label>
+        <label>Font Family:
+          <select v-model="fontFamily" @change="updateFontFamily">
+            <option value="Arial">Arial</option>
+            <option value="Courier">Courier</option>
+            <option value="Times New Roman">Times New Roman</option>
+          </select>
+        </label>
+        <button @click="toggleBold">Bold</button>
+        <button @click="toggleItalic">Italic</button>
+        <button @click="toggleUnderline">Underline</button>
+        <label>Background Color</label>
+        <input type="color" v-model="textBackgroundColor" @input="updateTextBgColor" />
+        <label>Stroke Color:
+          <input type="color" v-model="stroke" @input="updateStroke" />
+        </label>
+        <label>Stroke Width:
+          <input type="number" min="0" v-model.number="strokeWidth" @change="updateStrokeWidth" />
+        </label>
 
-    <!-- image properties if image selects by user -->
-    <div v-else-if="imageSelected">
-      <label>Opacity:
-        <input type="range" min="0" max="1" step="0.1" v-model.number="opacity" @input="updateOpacity" />
-      </label>
+      </div>
 
-      <label>Rotate :
-        <input type="range" min="0" max="360" step="1" v-model.number="angle" @input="updateAngle" />
-      </label>
+      <!-- image properties if image selects by user -->
+      <div v-else-if="imageSelected">
+        <label>Opacity:
+          <input type="range" min="0" max="1" step="0.1" v-model.number="opacity" @input="updateOpacity" />
+        </label>
 
-      <label>Brightness</label>
-      <input type="range" min="-1" max="1" step="0.1" v-model="brightness" @input="applyFilters" />
+        <label>Rotate :
+          <input type="range" min="0" max="360" step="1" v-model.number="angle" @input="updateAngle" />
+        </label>
 
-      <label>Contrast</label>
-      <input type="range" min="-1" max="1" step="0.1" v-model="contrast" @input="applyFilters" />
+        <label>Brightness</label>
+        <input type="range" min="-1" max="1" step="0.1" v-model="brightness" @input="applyFilters" />
 
-      <label>Blur</label>
-      <input type="range" min="0" max="1" step="0.01" v-model="blur" @input="applyFilters" />
+        <label>Contrast</label>
+        <input type="range" min="-1" max="1" step="0.1" v-model="contrast" @input="applyFilters" />
 
-      <label>Saturation</label>
-      <input type="range" min="-1" max="1" step="0.1" v-model="saturation" @input="applyFilters" />
+        <label>Blur</label>
+        <input type="range" min="0" max="1" step="0.01" v-model="blur" @input="applyFilters" />
+
+        <label>Saturation</label>
+        <input type="range" min="-1" max="1" step="0.1" v-model="saturation" @input="applyFilters" />
 
 
-      <label><input type="checkbox" v-model="grayscale" @change="applyFilters" /> Grayscale</label>
+        <label><input type="checkbox" v-model="grayscale" @change="applyFilters" /> Grayscale</label>
 
-    </div>
+      </div>
 
-    <!-- shape properties if shape selects by user -->
-    <div v-else-if="shapeSelected">
-      <label>Fill Color:
-        <input type="color" v-model="fill" @input="updateFill" />
-      </label>
-      <label>Stroke Color:
-        <input type="color" v-model="stroke" @input="updateStroke" />
-      </label>
-      <label>Stroke Width:
-        <input type="number" v-model.number="strokeWidth" @change="updateStrokeWidth" />
-      </label>
-    </div>
+      <!-- shape properties if shape selects by user -->
+      <div v-else-if="shapeSelected">
+        <label>Fill Color:
+          <input type="color" v-model="fill" @input="updateFill" />
+        </label>
+        <label>Stroke Color:
+          <input type="color" v-model="stroke" @input="updateStroke" />
+        </label>
+        <label>Stroke Width:
+          <input type="number" v-model.number="strokeWidth" @change="updateStrokeWidth" />
+        </label>
+      </div>
 
-    <!-- when nothing selected -->
-    <div v-else>
-      <p>No shape selected.</p>
+      <!-- when nothing selected -->
+      <div v-else>
+        <p>No shape selected.</p>
+      </div>
     </div>
   </div>
-</div>
 
 </template>
 
@@ -91,6 +100,7 @@ export default {
       grayscale: false,
       blur: 0,
       saturation: 0,
+      textBackgroundColor: '#ffffff',
 
     };
   },
@@ -148,29 +158,31 @@ export default {
       }
     },
 
-    applyFilters() {
-      if (!this.imageSelected || !this.active) return;
-
-      const filters = [];
-
-      if (this.brightness !== 0)
-        filters.push(new fabric.Image.filters.Brightness({ brightness: this.brightness }));
-      if (this.contrast !== 0)
-        filters.push(new fabric.Image.filters.Contrast({ contrast: this.contrast }));
-      if (this.blur > 0)
-        filters.push(new fabric.Image.filters.Blur({ blur: this.blur }));
-        if (this.saturation !== 0)
-        filters.push(new fabric.Image.filters.Saturation({ saturation: this.saturation }));
-      if (this.grayscale)
-        filters.push(new fabric.Image.filters.Grayscale());
-
-      this.active.filters = filters;
-      this.active.applyFilters();
-      this.canvas.renderAll();
-
-      console.log('Filters applied:', filters);
+    //Text PORPERTIES
+    // updateStroke() {
+    //   if (this.textSelected) {
+    //     this.active.set('stroke', this.stroke);
+    //     this.canvas.renderAll();
+    //     console.log('Text stroke color updated:', this.stroke);
+    //   }
+    // },
+    // updateStrokeWidth() {
+    //   if (this.textSelected) {
+    //     this.active.set('strokeWidth', this.strokeWidth);
+    //     this.canvas.renderAll();
+    //     console.log('Text stroke width updated:', this.strokeWidth);
+    //   }
+    // },
+    updateTextBgColor() {
+      const activeObject = this.canvas.getActiveObject();
+      if (activeObject && (activeObject.type === 'i-text' || activeObject.type === 'textbox')) {
+        activeObject.set({ backgroundColor: this.textBackgroundColor });
+        this.canvas.renderAll();
+        console.log('Text background color updated:', this.textBackgroundColor);
+      } else {
+        console.log('No text object selected or unsupported type:', activeObject?.type);
+      }
     },
-
     // Updates text font size
     updateFontSize() {
       if (this.textSelected) {
@@ -179,16 +191,6 @@ export default {
         console.log('Font size updated:', this.fontSize);
       }
     },
-
-    // Updates fill color for text
-    updateColor() {
-      if (this.textSelected) {
-        this.active.set('fill', this.color);
-        this.canvas.renderAll();
-        console.log('Font color updated:', this.color);
-      }
-    },
-
     // Updates font family for text
     updateFontFamily() {
       if (this.textSelected) {
@@ -197,7 +199,6 @@ export default {
         console.log('Font family updated:', this.fontFamily);
       }
     },
-
     // Toggles bold style
     toggleBold() {
       if (this.textSelected) {
@@ -227,6 +228,38 @@ export default {
         console.log('Underline toggled:', !isUnderlined);
       }
     },
+    // Updates fill color for text
+    updateColor() {
+      if (this.textSelected) {
+        this.active.set('fill', this.color);
+        this.canvas.renderAll();
+        console.log('Font color updated:', this.color);
+      }
+    },
+
+    //IMAGE PROPERTIES
+    applyFilters() {
+      if (!this.imageSelected || !this.active) return;
+
+      const filters = [];
+
+      if (this.brightness !== 0)
+        filters.push(new fabric.Image.filters.Brightness({ brightness: this.brightness }));
+      if (this.contrast !== 0)
+        filters.push(new fabric.Image.filters.Contrast({ contrast: this.contrast }));
+      if (this.blur > 0)
+        filters.push(new fabric.Image.filters.Blur({ blur: this.blur }));
+      if (this.saturation !== 0)
+        filters.push(new fabric.Image.filters.Saturation({ saturation: this.saturation }));
+      if (this.grayscale)
+        filters.push(new fabric.Image.filters.Grayscale());
+
+      this.active.filters = filters;
+      this.active.applyFilters();
+      this.canvas.renderAll();
+
+      console.log('Filters applied:', filters);
+    },
 
     // Updates opacity for image
     updateOpacity() {
@@ -253,23 +286,51 @@ export default {
       }
     },
 
-    // Updates stroke color for shape
+    //METHOD FOR STROKE WIFHT AND COLOR
     updateStroke() {
-      if (this.shapeSelected) {
+      if (!this.active) return;
+
+      if (this.textSelected) {
         this.active.set('stroke', this.stroke);
         this.canvas.renderAll();
-        console.log('Stroke color updated:', this.stroke);
+        console.log('Text stroke color updated:', this.stroke);
+      } else if (this.shapeSelected) {
+        this.active.set('stroke', this.stroke);
+        this.canvas.renderAll();
+        console.log('Shape stroke color updated:', this.stroke);
+      }
+    },
+    updateStrokeWidth() {
+      if (!this.active) return;
+
+      if (this.textSelected) {
+        this.active.set('strokeWidth', this.strokeWidth);
+        this.canvas.renderAll();
+        console.log('Text stroke width updated:', this.strokeWidth);
+      } else if (this.shapeSelected) {
+        this.active.set('strokeWidth', this.strokeWidth);
+        this.canvas.renderAll();
+        console.log('Shape stroke width updated:', this.strokeWidth);
       }
     },
 
-    // Updates stroke width for shape
-    updateStrokeWidth() {
-      if (this.shapeSelected) {
-        this.active.set('strokeWidth', this.strokeWidth);
-        this.canvas.renderAll();
-        console.log('Stroke width updated:', this.strokeWidth);
-      }
-    }
+    // Updates stroke color for shape
+    // updateStroke() {
+    //   if (this.shapeSelected) {
+    //     this.active.set('stroke', this.stroke);
+    //     this.canvas.renderAll();
+    //     console.log('Stroke color updated:', this.stroke);
+    //   }
+    // },
+
+    // // Updates stroke width for shape
+    // updateStrokeWidth() {
+    //   if (this.shapeSelected) {
+    //     this.active.set('strokeWidth', this.strokeWidth);
+    //     this.canvas.renderAll();
+    //     console.log('Stroke width updated:', this.strokeWidth);
+    //   }
+    // }
   }
 };
 </script>
