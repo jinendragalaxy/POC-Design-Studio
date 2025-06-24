@@ -1,21 +1,37 @@
 <template>
   <div class="studio-layout">
-    <Toolbar :canvas="canvas" :clipRect="clipRect" @show-random-popup="showRandomPopup = true"
-      @show-sticker-popup="showStickerPopup = true" @undo="undo" @redo="redo" />
+    <Toolbar 
+      :canvas="canvas" 
+      :clipRect="clipRect" 
+      :can-undo="canUndo"
+      :can-redo="canRedo"
+      @show-random-popup="showRandomPopup = true"
+      @show-sticker-popup="showStickerPopup = true" 
+      @undo="undo" 
+      @redo="redo" 
+    />
 
-    <!-- Popup component for sticker -->
     <Popup :visible="showStickerPopup" title="Choose a Sticker" @close="showStickerPopup = false">
       <div class="sticker-list">
-        <img v-for="sticker in stickers" :key="sticker.id" :src="sticker.url" @click="addSticker(sticker.url)"
-          style="width: 80px; margin: 10px; cursor: pointer;" />
+        <img 
+          v-for="sticker in stickers" 
+          :key="sticker.id" 
+          :src="sticker.url" 
+          @click="addSticker(sticker.url)"
+          style="width: 80px; margin: 10px; cursor: pointer;" 
+        />
       </div>
     </Popup>
 
-    <!-- Popup component for random images -->
     <Popup :visible="showRandomPopup" title="Choose a Random Image" @close="showRandomPopup = false">
       <div class="sticker-list">
-        <img v-for="random in randoms" :key="random.id" :src="random.url" @click="addRandom(random.url)"
-          style="width: 80px; margin: 10px; cursor: pointer;" />
+        <img 
+          v-for="random in randoms" 
+          :key="random.id" 
+          :src="random.url" 
+          @click="addRandom(random.url)"
+          style="width: 80px; margin: 10px; cursor: pointer;" 
+        />
       </div>
     </Popup>
 
@@ -23,9 +39,12 @@
       <FabricCanvas ref="fabricCanvas" @canvas-ready="setCanvas" />
       <TShirtArea :canvas="canvas" @clip-ready="setClipRect" />
       <ClipArea :canvas="canvas" @clip-ready="setClipRect" />
-
     </div>
-    <PropertiesPanel :canvas="canvas" />
+    
+    <PropertiesPanel 
+      :canvas="canvas" 
+      @property-change="handlePropertyChange"
+    />
   </div>
 </template>
 
@@ -34,10 +53,18 @@ import Toolbar from '../components/Toolbar.vue';
 import FabricCanvas from '../components/FabricCanvas.vue';
 import PropertiesPanel from '../components/PropertiesPanel.vue';
 import TShirtArea from '../components/TShirtArea.vue';
-import ClipArea from '../components/ClipArea.vue'
+import ClipArea from '../components/ClipArea.vue';
 import Popup from '@/components/Common/Popup.vue';
+
 export default {
-  components: { Toolbar, FabricCanvas, PropertiesPanel, TShirtArea, ClipArea, Popup, },
+  components: { 
+    Toolbar, 
+    FabricCanvas, 
+    PropertiesPanel, 
+    TShirtArea, 
+    ClipArea, 
+    Popup 
+  },
   data() {
     return {
       canvas: null,
@@ -49,6 +76,7 @@ export default {
       redoStack: [],
       canUndo: false,
       canRedo: false,
+      saveDebounce: null,
       randoms: [
         { id: 1, url: "https://picsum.photos/200" },
         { id: 2, url: "https://loremflickr.com/g/200/240/paris" },
@@ -65,31 +93,100 @@ export default {
     setCanvas(c) {
       this.canvas = c;
 
+      // Enhance serialization to include all properties
       fabric.Object.prototype.toObject = (function(toObject) {
-    return function() {
-      return fabric.util.object.extend(toObject.call(this), {
-        selectable: this.selectable,
-        lockMovementX: this.lockMovementX,
-        lockMovementY: this.lockMovementY,
-        evented: this.evented,
-        hasBorders: this.hasBorders,
-        hasControls: this.hasControls,
-      });
-    };
-  })(fabric.Object.prototype.toObject);
-      // Setup event listeners
-      this.canvas.on('object:added', () => this.saveState());
-      this.canvas.on('object:modified', () => this.saveState());
-      this.canvas.on('object:removed', () => this.saveState());
+        return function(propertiesToInclude) {
+          propertiesToInclude = (propertiesToInclude || []).concat([
+            // Common properties
+            'fill', 'stroke', 'strokeWidth', 'strokeDashArray', 'opacity',
+            'angle', 'scaleX', 'scaleY', 'flipX', 'flipY', 'shadow',
+            'selectable', 'evented', 'hasControls', 'hasBorders',
+            
+            // Text properties
+            'fontSize', 'fontFamily', 'fontWeight', 'fontStyle', 
+            'textAlign', 'lineHeight', 'charSpacing', 'underline',
+            'linethrough', 'overline', 'textBackgroundColor',
+            
+            // Image properties
+            'filters', 'cropX', 'cropY',
+            
+            // Custom properties
+            'id', 'clipName', '__dirty'
+          ]);
+          return toObject.call(this, propertiesToInclude);
+        };
+      })(fabric.Object.prototype.toObject);
 
+      // Setup comprehensive event listeners
+      this.setupCanvasEvents();
+      
       setTimeout(() => {
-        this.saveState(true); // Save only after default objects are added
-      }, 300); // adjust time as needed
+        this.saveState(true); // Initial state
+      }, 500);
+    },
+
+    setupCanvasEvents() {
+      this.canvas.on({
+        'object:added': () => this.saveState(),
+        'object:modified': () => this.saveState(),
+        'object:removed': () => this.saveState(),
+        'object:propertychanged': (e) => {
+          if (e.target.__dirty !== false) {
+            this.saveState();
+          }
+        },
+        'selection:created': () => this.saveState(),
+        'selection:updated': () => this.saveState(),
+        'selection:cleared': () => this.saveState(),
+        'path:created': () => this.saveState()
+      });
+    },
+
+    handlePropertyChange() {
+      if (this.canvas.getActiveObject()) {
+        this.canvas.getActiveObject().__dirty = true;
+        this.saveState();
+      }
+    },
+
+    saveState(isInitial = false) {
+      if (!this.canvas || this.isRestoring) return;
+
+      clearTimeout(this.saveDebounce);
+      this.saveDebounce = setTimeout(() => {
+        const json = this.canvas.toJSON();
+        
+        // Mark all objects as clean
+        this.canvas.getObjects().forEach(obj => {
+          obj.__dirty = false;
+        });
+
+        if (isInitial) {
+          this.undoStack = [json];
+          this.redoStack = [];
+        } else {
+          // Only save if different from last state
+          const lastState = this.undoStack.length > 0 
+            ? JSON.stringify(this.undoStack[this.undoStack.length - 1]) 
+            : '';
+          const newState = JSON.stringify(json);
+          
+          if (lastState !== newState) {
+            this.undoStack.push(json);
+            // Limit stack to 50 states
+            if (this.undoStack.length > 50) {
+              this.undoStack.shift();
+            }
+            this.redoStack = [];
+          }
+        }
+
+        this.updateUndoRedoState();
+      }, 300);
     },
 
     restoreClipRectLock() {
-      const objects = this.canvas.getObjects();
-      const clip = objects.find(obj => obj.id === 'clip-rect');
+      const clip = this.canvas.getObjects().find(obj => obj.id === 'clip-rect');
       if (clip) {
         clip.set({
           selectable: false,
@@ -102,57 +199,18 @@ export default {
       }
     },
 
-
-
-
-    saveState(isInitial = false) {
-      if (!this.canvas || this.isRestoring) return;
-
-      const json = this.canvas.toJSON();
-
-      if (isInitial) {
-        console.log("Initial state objects:", json.objects);
-        this.undoStack = [json];
-        this.redoStack = [];
-      } else {
-        this.undoStack.push(json);
-        this.redoStack = [];
-      }
-
-      this.updateUndoRedoState();
-
-    },
-
-
-    updateUndoRedoState() {
-      this.canUndo = this.undoStack.length > 1;
-      this.canRedo = this.redoStack.length > 0;
-
-      console.log("UndoStack:", this.undoStack.length, "canUndo:", this.canUndo);
-      console.log("RedoStack:", this.redoStack.length, "canRedo:", this.canRedo);
-
-      // Emit these to Toolbar
-      this.$emit('update:canUndo', this.canUndo);
-      this.$emit('update:canRedo', this.canRedo);
-
-    },
-
-
     undo() {
       if (this.undoStack.length < 2) return;
 
       const currentState = this.undoStack.pop();
       this.redoStack.push(currentState);
 
-      const prevState = this.undoStack[this.undoStack.length - 1];
-
       this.isRestoring = true;
-      this.canvas.loadFromJSON(prevState, () => {
+      this.canvas.loadFromJSON(this.undoStack[this.undoStack.length - 1], () => {
         this.canvas.renderAll();
         this.isRestoring = false;
         this.updateUndoRedoState();
-        this.restoreClipRectLock(this.canvas);
-
+        this.restoreClipRectLock();
       });
     },
 
@@ -167,25 +225,31 @@ export default {
         this.canvas.renderAll();
         this.isRestoring = false;
         this.updateUndoRedoState();
-        this.restoreClipRectLock(this.canvas);
-
+        this.restoreClipRectLock();
       });
     },
 
+    updateUndoRedoState() {
+      this.canUndo = this.undoStack.length > 1;
+      this.canRedo = this.redoStack.length > 0;
+    },
 
     setClipRect(r) {
       this.clipRect = r;
     },
 
     addSticker(url) {
-      if (!this.clipRect) {
-        console.warn("Clip area not ready yet");
-        return;
-      }
+      if (!this.clipRect) return;
 
       const { left, top } = this.clipRect;
       fabric.Image.fromURL(url, (img) => {
-        img.set({ left: left + 20, top: top + 20, scaleX: 0.3, scaleY: 0.3 });
+        img.set({ 
+          left: left + 20, 
+          top: top + 20, 
+          scaleX: 0.3, 
+          scaleY: 0.3,
+          id: `sticker-${Date.now()}`
+        });
         this.canvas.add(img);
         this.canvas.setActiveObject(img);
         this.canvas.renderAll();
@@ -193,78 +257,64 @@ export default {
       }, { crossOrigin: 'anonymous' });
     },
 
-    //add Random
     addRandom(url) {
-      if (!this.clipRect) {
-        console.warn("Clip area not ready yet");
-        return;
-      }
+      if (!this.clipRect) return;
 
       const { left, top } = this.clipRect;
       fabric.Image.fromURL(url, (img) => {
-        img.set({ left: left + 20, top: top + 20, scaleX: 0.3, scaleY: 0.3 });
+        img.set({ 
+          left: left + 20, 
+          top: top + 20, 
+          scaleX: 0.3, 
+          scaleY: 0.3,
+          id: `random-${Date.now()}`
+        });
         this.canvas.add(img);
         this.canvas.setActiveObject(img);
         this.canvas.renderAll();
         this.showRandomPopup = false;
       }, { crossOrigin: 'anonymous' });
     },
-    //method to event handle od delete
+
     handleKeyPress(e) {
       if (!this.canvas) return;
 
-      // DUPLICATE with Ctrl+D or Cmd+D
+      // Duplicate with Ctrl+D/Cmd+D
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'd') {
-        e.preventDefault(); // prevent browser bookmark shortcut
-        const activeObjects = this.canvas.getActiveObjects();
-
-        if (activeObjects.length) {
-          activeObjects.forEach(original => {
-            original.clone(clone => {
-              clone.set({
-                left: original.left + 20,
-                top: original.top + 20,
-                evented: true
-              });
-              this.canvas.add(clone);
+        e.preventDefault();
+        this.canvas.getActiveObjects().forEach(original => {
+          original.clone(clone => {
+            clone.set({
+              left: original.left + 20,
+              top: original.top + 20,
+              evented: true,
+              id: `${original.id}-copy-${Date.now()}`
             });
+            this.canvas.add(clone);
           });
-          this.canvas.discardActiveObject();
-          this.canvas.requestRenderAll();
-          console.log("Object(s) Duplicated");
-        }
+        });
+        this.canvas.requestRenderAll();
       }
 
-      // DELETE with Delete key
+      // Delete with Delete key
       if (e.key === 'Delete') {
-        const activeObjects = this.canvas.getActiveObjects();
-
-        if (activeObjects.length) {
-          activeObjects.forEach(obj => {
-            this.canvas.remove(obj);
-          });
-          this.canvas.discardActiveObject();
-          this.canvas.requestRenderAll();
-          console.log("Object(s) Removed");
-        }
+        this.canvas.getActiveObjects().forEach(obj => this.canvas.remove(obj));
+        this.canvas.requestRenderAll();
       }
     },
 
-
     handleKeyDown(e) {
-      // Undo: Ctrl + Z or Cmd + Z
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
-        this.undo();
-      }
-      // Redo: Ctrl + Y or Cmd + Shift + Z
-      else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'y' || (e.shiftKey && e.key.toLowerCase() === 'z'))) {
+        if (!e.shiftKey) this.undo();
+      } else if ((e.ctrlKey || e.metaKey) && 
+                (e.key.toLowerCase() === 'y' || 
+                (e.shiftKey && e.key.toLowerCase() === 'z'))) {
         e.preventDefault();
         this.redo();
       }
     },
   },
-
 
   mounted() {
     window.addEventListener('keydown', this.handleKeyPress);
@@ -272,8 +322,9 @@ export default {
   },
 
   beforeDestroy() {
-    window.removeEventListener('keydown', this.handleKeyPress)
-    window.removeEventListener('keydown', this.handleKeyDown)
+    window.removeEventListener('keydown', this.handleKeyPress);
+    window.removeEventListener('keydown', this.handleKeyDown);
+    clearTimeout(this.saveDebounce);
   },
 };
 </script>
@@ -290,5 +341,11 @@ export default {
   display: flex;
   flex-direction: column;
   position: relative;
+}
+
+.sticker-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 </style>

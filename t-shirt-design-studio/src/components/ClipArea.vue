@@ -46,6 +46,7 @@ export default {
         hasBorders: false,
         hoverCursor: 'default',
         excludeFromHistory: true,
+        absolutePositioned: true,
         
       });
       canvas.add(this.clipArea);
@@ -53,7 +54,7 @@ export default {
 
       this.$emit('clip-ready', this.clipArea);
       console.log('Clip area added');
-
+      
       // Restrict movement inside the clip area
       canvas.on('object:moving', (e) => {
         const obj = e.target;
