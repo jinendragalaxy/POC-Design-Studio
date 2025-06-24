@@ -56,8 +56,7 @@ A powerful web-based T-shirt design tool built with Vue.js 2 and Fabric.js 4.6. 
 - Download designs in multiple formats:
   - High-quality PNG
   - Print-ready PDF
-  - SVG vector format (coming soon)
-- Social media sharing integration
+
 
 ## Project setup
 ```
