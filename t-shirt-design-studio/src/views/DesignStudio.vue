@@ -37,8 +37,8 @@
 
     <div class="canvas-area">
       <FabricCanvas ref="fabricCanvas" @canvas-ready="setCanvas" />
-      <TShirtArea :canvas="canvas" @clip-ready="setClipRect" />
-      <ClipArea :canvas="canvas" @clip-ready="setClipRect" />
+      <ProductCanvas :canvas="canvas" :image-url="selectedImage" @clip-ready="setClipRect"  @image-dimensions="setImageBounds"/>
+      <ClipArea :canvas="canvas" @clip-ready="setClipRect" :imageBounds="imageBounds" />
     </div>
     
     <PropertiesPanel 
@@ -52,7 +52,7 @@
 import Toolbar from '../components/Toolbar.vue';
 import FabricCanvas from '../components/FabricCanvas.vue';
 import PropertiesPanel from '../components/PropertiesPanel.vue';
-import TShirtArea from '../components/TShirtArea.vue';
+import ProductCanvas from '../components/ProductCanvas.vue';
 import ClipArea from '../components/ClipArea.vue';
 import Popup from '@/components/Common/Popup.vue';
 
@@ -61,7 +61,7 @@ export default {
     Toolbar, 
     FabricCanvas, 
     PropertiesPanel, 
-    TShirtArea, 
+    ProductCanvas, 
     ClipArea, 
     Popup 
   },
@@ -74,6 +74,8 @@ export default {
       isRestoring: false,
       undoStack: [],
       redoStack: [],
+      selectedImage: '',
+      imageBounds:null,
       canUndo: false,
       canRedo: false,
       saveDebounce: null,
@@ -198,6 +200,9 @@ export default {
         });
       }
     },
+    setImageBounds(bounds) {
+    this.imageBounds = bounds;
+  },
 
     undo() {
       if (this.undoStack.length < 2) return;
@@ -320,6 +325,10 @@ export default {
     window.addEventListener('keydown', this.handleKeyPress);
     window.addEventListener('keydown', this.handleKeyDown);
   },
+  created() {
+  const filename = this.$route.query.image || 't-shirt.png';
+  this.selectedImage = require(`@/assets/${filename}`);
+},
 
   beforeDestroy() {
     window.removeEventListener('keydown', this.handleKeyPress);

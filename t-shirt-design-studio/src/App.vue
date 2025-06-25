@@ -1,16 +1,11 @@
 <template>
   <div id="app">
-    <DesignStudio />
+    <router-view />
   </div>
 </template>
 
 <script>
-import DesignStudio from './views/DesignStudio.vue';
-
 export default {
-  name: 'App',
-  components: {
-    DesignStudio
-  }
-};
+  name: 'App'
+}
 </script>

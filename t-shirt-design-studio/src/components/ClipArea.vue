@@ -8,7 +8,7 @@ import { fabric } from 'fabric';
 
 export default {
   name: 'ClipArea',
-  props: ['canvas'],
+  props: ['canvas','imageBounds'],
   data() {
     return {
       clipArea: null,
@@ -21,39 +21,51 @@ export default {
         console.log('Canvas received in ClipArea');
         this.addClipArea(newCanvas);
       }
+    },
+
+    imageBounds(newBounds) {
+    if (newBounds && this.canvas) {
+      this.addClipArea(this.canvas);
     }
+  }
   },
   methods: {
     addClipArea(canvas) {
-      const clipWidth = 300;
-      const clipHeight = 420;
-      const clipLeft = canvas.width / 2 - clipWidth / 2;
-      const clipTop = canvas.height / 2 - clipHeight / 2;
+      
+  if (!this.imageBounds) return;
 
-      // Creating a transparent rectangular clip area
-      this.clipArea = new fabric.Rect({
-        id: 'clip-rect',
-        left: clipLeft,
-        top: clipTop,
-        width: clipWidth,
-        height: clipHeight,
-        fill: 'rgba(0, 0, 0, 0.1)',
-        stroke: 'blue',
-        strokeWidth: 1,
-        selectable: false,
-        evented: false,
-        hasControls: false,
-        hasBorders: false,
-        hoverCursor: 'default',
-        excludeFromHistory: true,
-        absolutePositioned: true,
-        
-      });
-      canvas.add(this.clipArea);
-      canvas.renderAll();
+  const padding = 100;
+  const clipLeft = this.imageBounds.left + padding;
+  const clipTop = this.imageBounds.top + padding;
+  const clipWidth = this.imageBounds.width - 2 * padding;
+  const clipHeight = this.imageBounds.height - 2 * padding;
 
-      this.$emit('clip-ready', this.clipArea);
-      console.log('Clip area added');
+  if (this.clipArea) {
+    canvas.remove(this.clipArea);
+  }
+
+  this.clipArea = new fabric.Rect({
+    id: 'clip-rect',
+    left: clipLeft,
+    top: clipTop,
+    width: clipWidth,
+    height: clipHeight,
+    fill: 'rgba(0, 0, 0, 0.1)',
+    stroke: 'blue',
+    strokeWidth: 1,
+    selectable: false,
+    evented: false,
+    hasControls: false,
+    hasBorders: false,
+    hoverCursor: 'default',
+    excludeFromHistory: true,
+    absolutePositioned: true
+  });
+
+  canvas.add(this.clipArea);
+  canvas.renderAll();
+  this.$emit('clip-ready', this.clipArea);
+  console.log('Clip area added');
       
       // Restrict movement inside the clip area
       canvas.on('object:moving', (e) => {
