@@ -27,7 +27,7 @@ export default {
     methods: {
         loadProductImage(canvas, url) {
             fabric.Image.fromURL(url, (img) => {
-                img.scaleToWidth(500);
+                img.scaleToWidth(400);
                 const left = canvas.width / 2 - img.getScaledWidth() / 2;
                 const top = canvas.height / 2 - img.getScaledHeight() / 2;
                 img.set({

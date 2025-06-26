@@ -55,6 +55,7 @@ import PropertiesPanel from '../components/PropertiesPanel.vue';
 import ProductCanvas from '../components/ProductCanvas.vue';
 import ClipArea from '../components/ClipArea.vue';
 import Popup from '@/components/Common/Popup.vue';
+import products from '@/data/products.json';
 
 export default {
   components: { 
@@ -326,8 +327,16 @@ export default {
     window.addEventListener('keydown', this.handleKeyDown);
   },
   created() {
-  const filename = this.$route.query.image || 't-shirt.png';
-  this.selectedImage = require(`@/assets/${filename}`);
+    const id = Number(this.$route.query.id); // get ID from URL
+  const product = products.find(p => p.id === id);
+
+  if (product) {
+    this.selectedImage = require(`@/assets/${product.image}`);
+  } else {
+    console.error('Product not found for id:', id);
+  }
+
+
 },
 
   beforeDestroy() {
