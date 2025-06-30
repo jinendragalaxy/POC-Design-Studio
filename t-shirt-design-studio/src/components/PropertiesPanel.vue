@@ -290,11 +290,6 @@
             <input type="color" v-model="fill" @input="updateFill" />
           </label>
 
-          <label>Fill Opacity:
-            <input type="range" min="0" max="1" step="0.1" v-model.number="fillOpacity" @input="updateFillOpacity" />
-            <span>{{ fillOpacity.toFixed(1) }}</span>
-          </label>
-
           <label>Stroke Color:
             <input type="color" v-model="stroke" @input="updateStroke" />
           </label>
