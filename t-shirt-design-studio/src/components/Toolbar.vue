@@ -15,6 +15,23 @@
       </div>
     </div>
 
+    <!-- Zoom Section -->
+     <!-- Zoom Controls Section -->
+<div class="group">
+  <div class="group-header" @click="toggleSection('zoom')">
+    <h4>Zoom</h4>
+    <span>{{ openSections.zoom ? '▲' : '▼' }}</span>
+  </div>
+  <div v-show="openSections.zoom" class="group-body">
+    <button @click="zoomIn">Zoom In</button>
+    <button @click="zoomOut">Zoom Out</button>
+    <label>
+      Zoom: {{ (zoomLevel * 100).toFixed(0) }}%
+    </label>
+  </div>
+</div>
+
+
     <!-- Shapes Section -->
     <div class="group">
       <div class="group-header" @click="toggleSection('shapes')">
@@ -131,11 +148,13 @@ export default {
         controls: false,
         export: false,
         drawing: false,
+        zoom: false,
       },
       isDrawingEnabled: false,
       brushSize: 5,
       brushColor: '#000000',
-      freeDrawingBrush: null
+      freeDrawingBrush: null,
+      zoomLevel: 1
     };
   },
   props: {
@@ -443,6 +462,50 @@ export default {
         this.freeDrawingBrush.color = this.brushColor;
       }
     },
+    zoomIn() {
+    if (!this.canvas) return;
+    this.zoomLevel = Math.min(this.zoomLevel * 1.1, 3); // clamp max zoom
+    this.canvas.setZoom(this.zoomLevel);
+  },
+
+  zoomOut() {
+    if (!this.canvas) return;
+    this.zoomLevel = Math.max(this.zoomLevel / 1.1, 0.3); // clamp min zoom
+    this.canvas.setZoom(this.zoomLevel);
+  },
+  enableCanvasPanning() {
+  let isDragging = false;
+  let lastPosX = 0;
+  let lastPosY = 0;
+
+  this.canvas.on('mouse:down', (opt) => {
+    const evt = opt.e;
+    if (evt.altKey || evt.button === 1) { // Optional: only pan on Alt key or middle-click
+      isDragging = true;
+      this.canvas.selection = false;
+      lastPosX = evt.clientX;
+      lastPosY = evt.clientY;
+    }
+  });
+
+  this.canvas.on('mouse:move', (opt) => {
+    if (isDragging) {
+      const e = opt.e;
+      const vpt = this.canvas.viewportTransform;
+      vpt[4] += e.clientX - lastPosX;
+      vpt[5] += e.clientY - lastPosY;
+      this.canvas.requestRenderAll();
+      lastPosX = e.clientX;
+      lastPosY = e.clientY;
+    }
+  });
+
+  this.canvas.on('mouse:up', () => {
+    isDragging = false;
+    this.canvas.selection = true;
+  });
+},
+
 
     handlePathCreated() {
       // Save state after each drawn path
@@ -450,6 +513,13 @@ export default {
     }
   },
 
+  watch: {
+  canvas(newVal) {
+    if (newVal) {
+      this.enableCanvasPanning();
+    }
+  }
+},
 
 };
 </script>
