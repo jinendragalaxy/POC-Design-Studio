@@ -19,7 +19,7 @@ A powerful web-based T-shirt design tool built with Vue.js 2 and Fabric.js 4.6. 
   - Filters: Grayscale, Invert, Polaroid, Vintage, Kodachrome, Technicolor
 - Image cropping tool with adjustable selection
 - Background removal and transparency support
-hi
+
 ### ✏️ Text Editing (Advanced)
 - Add and customize text with extensive styling options:
   - Font family selection (15+ fonts)
