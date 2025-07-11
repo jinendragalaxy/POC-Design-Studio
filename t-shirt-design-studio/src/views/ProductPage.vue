@@ -2,7 +2,7 @@
   <div class="product-page">
     <h1 class="title">Choose Your Product</h1>
 
-    <!-- 🟢 Product Grid (Untouched) -->
+    <!-- Product Grid -->
     <div class="product-grid">
       <div v-for="product in products" :key="product.id" class="product-card">
         <img
@@ -13,25 +13,35 @@
         <button class="customize-btn" @click="customizeProduct(product.id)">
           Customize
         </button>
+        <button
+          v-if="has360View(product)"
+          class="quickview-btn"
+          @click="openQuickView(product)"
+        >
+          360 View
+        </button>
       </div>
     </div>
 
-    <!-- 🟡 New Section: 360° Shoe Viewer -->
-    <div class="shoe360-section">
-      <h2 class="title">360° Shoe View</h2>
+    <!-- Quick View Modal -->
+    <div v-if="showQuickView" class="modal-overlay" @click.self="closeQuickView">
+      <div class="modal-content">
+        <span class="close-btn" @click="closeQuickView">&times;</span>
 
-      <div
-        class="viewer"
-        @mousedown="startDrag('shoe', $event)"
-        @mousemove="onDrag('shoe', $event)"
-        @mouseup="endDrag"
-        @mouseleave="endDrag"
-      >
-        <img
-          :src="get360ShoeImage()"
-          class="product-image"
-          draggable="false"
-        />
+        <div
+          v-if="get360ImageForProduct(selectedProduct, shoeFrameIndex)"
+          class="viewer"
+          @mousedown="startDrag($event)"
+          @mousemove="onDrag($event)"
+          @mouseup="endDrag"
+          @mouseleave="endDrag"
+        >
+          <img
+            :src="get360ImageForProduct(selectedProduct, shoeFrameIndex)"
+            class="product-image"
+            draggable="false"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -39,7 +49,12 @@
 
 <script>
 import productsData from '@/data/products.json';
-import images360 from '@/data/360.json'; // 360 shoe image list under key "shoe"
+import images360 from '@/data/360.json';
+
+const imageModules = {
+  shoe: require.context('@/assets/360 Images/Shoe', false, /\.(png|jpe?g)$/)
+  // Add more folders if needed
+};
 
 export default {
   data() {
@@ -48,7 +63,9 @@ export default {
       images360,
       dragging: false,
       startX: 0,
-      shoeFrameIndex: 0 // index for the shoe 360 frame
+      shoeFrameIndex: 0,
+      showQuickView: false,
+      selectedProduct: null
     };
   },
   methods: {
@@ -58,23 +75,45 @@ export default {
     customizeProduct(productId) {
       this.$router.push({ name: 'DesignStudio', query: { id: productId } });
     },
-    get360ShoeImage() {
-      const frames = this.images360["shoe"];
-      if (!frames || frames.length === 0) return '';
-      const imageName = frames[this.shoeFrameIndex];
-      return require(`@/assets/360 Images/Shoe/${imageName}`);
+    openQuickView(product) {
+      this.selectedProduct = product;
+      this.shoeFrameIndex = 0;
+      this.showQuickView = true;
     },
-    startDrag(type, e) {
+    closeQuickView() {
+      this.showQuickView = false;
+    },
+    get360ImageForProduct(product, frameIndex = 0) {
+      const key = product?.["360Key"];
+      if (!key || !this.images360[key] || this.images360[key].length === 0) {
+        return null;
+      }
+      const imageName = this.images360[key][frameIndex];
+      try {
+        const loader = imageModules[key];
+        if (!loader) return null;
+        return loader(`./${imageName}`);
+      } catch (err) {
+        console.warn("⚠️ Image not found:", `./${key}/${imageName}`);
+        return null;
+      }
+    },
+    has360View(product) {
+      const key = product?.["360Key"];
+      return key && this.images360[key] && this.images360[key].length > 0;
+    },
+    startDrag(e) {
       this.dragging = true;
       this.startX = e.clientX;
     },
-    onDrag(type, e) {
+    onDrag(e) {
       if (!this.dragging) return;
       const dx = e.clientX - this.startX;
       if (Math.abs(dx) > 5) {
-        if (type === 'shoe') {
-          const frames = this.images360["shoe"];
-          const direction = dx > 0 ? 1 : -1;
+        const direction = dx > 0 ? 1 : -1;
+        const key = this.selectedProduct?.["360Key"];
+        const frames = this.images360[key];
+        if (frames) {
           this.shoeFrameIndex =
             (this.shoeFrameIndex + direction + frames.length) % frames.length;
         }
@@ -127,7 +166,8 @@ export default {
   margin-bottom: 15px;
 }
 
-.customize-btn {
+.customize-btn,
+.quickview-btn {
   background-color: #007bff;
   color: white;
   border: none;
@@ -135,27 +175,60 @@ export default {
   font-size: 14px;
   border-radius: 5px;
   cursor: pointer;
+  margin-top: 10px;
 }
 
 .customize-btn:hover {
   background-color: #0056b3;
 }
 
-.shoe360-section {
-  margin-top: 60px;
-  text-align: center;
+.quickview-btn {
+  margin-left: 10px;
+}
+
+.quickview-btn:hover {
+  background-color: #218838;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 720px;
+  max-width: 90%;
+  position: relative;
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-size: 28px;
+  cursor: pointer;
 }
 
 .viewer {
-  width: 700px;       /* Increase width */
-  height: 400px;      /* Increase height */
-  margin: 0 auto;
+  width: 100%;
+  height: 400px;
   overflow: hidden;
   cursor: grab;
 }
 
 .viewer .product-image {
-  width: 100%;        /* Fill viewer */
+  width: 100%;
   height: 100%;
   object-fit: contain;
   user-select: none;
