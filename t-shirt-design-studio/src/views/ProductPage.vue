@@ -4,7 +4,13 @@
 
     <!-- Product Grid -->
     <div class="product-grid">
-      <div v-for="product in products" :key="product.id" class="product-card">
+      <div 
+        v-for="product in products" 
+        :key="product.id" 
+        class="product-card"
+        @mouseenter="showPopup(product)"
+        @mouseleave="hidePopup"
+      >
         <img
           :src="getImageUrl(product.image)"
           alt="Product Image"
@@ -13,18 +19,40 @@
         <button class="customize-btn" @click="customizeProduct(product.id)">
           Customize
         </button>
-        <button
+        
+        <!-- OLD Quick view button-->
+        <!-- <button
           v-if="has360View(product)"
           class="quickview-btn"
           @click="openQuickView(product)"
         >
           360 View
-        </button>
+        </button> -->
+        
+        <!-- NEW: Hover Popup Container -->
+        <div v-if="activePopup === product.id" class="popup-container">
+          <div class="popup-content">
+            <!-- 360 Viewer-->
+            <div 
+              class="popup-viewer"
+              @mousedown="startDrag($event)"
+              @mousemove="onDrag($event)"
+              @mouseup="endDrag"
+              @mouseleave="endDrag"
+            >
+              <img
+                :src="get360ImageForProduct(product, shoeFrameIndex)"
+                class="product-image"
+                draggable="false"
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- Quick View Modal -->
-    <div v-if="showQuickView" class="modal-overlay" @click.self="closeQuickView">
+    <!-- OLD Quick View Modal -->
+    <!-- <div v-if="showQuickView" class="modal-overlay" @click.self="closeQuickView">
       <div class="modal-content">
         <span class="close-btn" @click="closeQuickView">&times;</span>
 
@@ -43,7 +71,7 @@
           />
         </div>
       </div>
-    </div>
+    </div> -->
   </div>
 </template>
 
@@ -64,8 +92,13 @@ export default {
       dragging: false,
       startX: 0,
       shoeFrameIndex: 0,
-      showQuickView: false,
-      selectedProduct: null
+      // OLD: Modal state variables (removed)
+      // showQuickView: false,
+      // selectedProduct: null
+      
+      // NEW: Hover state management
+      activePopup: null, // Tracks which product has active popup
+      currentProduct: null // Current product for 360 view
     };
   },
   methods: {
@@ -75,14 +108,31 @@ export default {
     customizeProduct(productId) {
       this.$router.push({ name: 'DesignStudio', query: { id: productId } });
     },
-    openQuickView(product) {
-      this.selectedProduct = product;
-      this.shoeFrameIndex = 0;
-      this.showQuickView = true;
+    
+    // OLD: Modal control methods (removed)
+    // openQuickView(product) {
+    //   this.selectedProduct = product;
+    //   this.shoeFrameIndex = 0;
+    //   this.showQuickView = true;
+    // },
+    // closeQuickView() {
+    //   this.showQuickView = false;
+    // },
+    
+    // NEW: Hover-based popup control
+    showPopup(product) {
+      // Only show popup if product has 360 view
+      if (this.has360View(product)) {
+        this.activePopup = product.id;
+        this.currentProduct = product;
+        this.shoeFrameIndex = 0;
+      }
     },
-    closeQuickView() {
-      this.showQuickView = false;
+    hidePopup() {
+      this.activePopup = null;
+      this.currentProduct = null;
     },
+    
     get360ImageForProduct(product, frameIndex = 0) {
       const key = product?.["360Key"];
       if (!key || !this.images360[key] || this.images360[key].length === 0) {
@@ -107,11 +157,11 @@ export default {
       this.startX = e.clientX;
     },
     onDrag(e) {
-      if (!this.dragging) return;
+      if (!this.dragging || !this.currentProduct) return; // NEW: Added currentProduct check
       const dx = e.clientX - this.startX;
       if (Math.abs(dx) > 5) {
         const direction = dx > 0 ? 1 : -1;
-        const key = this.selectedProduct?.["360Key"];
+        const key = this.currentProduct?.["360Key"]; // CHANGED: selectedProduct → currentProduct
         const frames = this.images360[key];
         if (frames) {
           this.shoeFrameIndex =
@@ -126,7 +176,6 @@ export default {
   }
 };
 </script>
-
 <style scoped>
 .product-page {
   padding: 30px;
@@ -232,5 +281,86 @@ export default {
   height: 100%;
   object-fit: contain;
   user-select: none;
+}
+.popup-container {
+  position: absolute;
+  top: -10px;
+  left: calc(100% + 15px); /* Positions popup to the right of product card */
+  z-index: 100;
+  width: 220px; /* Compact size */
+  height: 220px;
+  pointer-events: none; /* Allows hover through to elements below */
+}
+
+.popup-content {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); /* Subtle shadow */
+  padding: 10px;
+  width: 100%;
+  height: 100%;
+  pointer-events: auto; /* Re-enable pointer events inside popup */
+}
+
+.popup-viewer {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  cursor: grab;
+}
+
+.popup-viewer .product-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+}
+
+/* Position the popup relative to card */
+.product-card {
+  position: relative; /* Needed for absolute positioning of popup */
+}
+
+/* OLD: Modal styles (removed) */
+/* .modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 720px;
+  max-width: 90%;
+  position: relative;
+}
+
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.viewer {
+  width: 100%;
+  height: 400px;
+  overflow: hidden;
+  cursor: grab;
+} */
+
+/* Hide the old quick view button */
+.quickview-btn {
+  display: none;
 }
 </style>
