@@ -1,6 +1,10 @@
+## Further enhancements to this project have been added on the second branch named 'more-enhancement-in-design-studio'.
+
 # T-Shirt Design Studio 🎨👕
 
 A powerful web-based T-shirt design tool built with Vue.js 2 and Fabric.js 4.6. Create professional custom T-shirt designs with advanced text, image, and shape editing capabilities.
+
+
 
 ## 🚀 Features
 
