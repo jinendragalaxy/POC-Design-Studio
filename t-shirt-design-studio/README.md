@@ -59,6 +59,9 @@ A powerful web-based T-shirt design tool built with Vue.js 2 and Fabric.js 4.6. 
   - SVG vector format (coming soon)
 - Social media sharing integration
 
+### More Enhancments
+- Also added zoom functionality
+- Added a 360 viewer fucntionality to view the product in 360 view
 
 ## Project setup
 ```
