@@ -8,7 +8,6 @@
         v-for="product in products" 
         :key="product.id" 
         class="product-card"
-        @mouseenter="showPopup(product)"
         @mouseleave="hidePopup"
       >
         <img
@@ -20,7 +19,7 @@
           Customize
         </button>
         
-        <!-- OLD Quick view button-->
+        <!-- OLD Quick view button (don't remove as per request) -->
         <!-- <button
           v-if="has360View(product)"
           class="quickview-btn"
@@ -28,34 +27,52 @@
         >
           360 View
         </button> -->
-        
-        <!-- NEW: Hover Popup Container -->
-        <div v-if="activePopup === product.id" class="popup-container">
-          <div class="popup-content">
-            <!-- 360 Viewer-->
-            <div 
-              class="popup-viewer"
-              @mousedown="startDrag($event)"
-              @mousemove="onDrag($event)"
-              @mouseup="endDrag"
-              @mouseleave="endDrag"
-            >
-              <img
-                :src="get360ImageForProduct(product, shoeFrameIndex)"
-                class="product-image"
-                draggable="false"
-              />
-            </div>
-          </div>
+
+        <!-- NEW: Quick View Button on Hover for ALL products -->
+        <div class="quickview-hover-btn" v-if="activePopup !== product.id">
+          <button @click="showPopup(product)">
+            Quick View
+          </button>
         </div>
+
+        <!-- NEW: Popup Shows Either 360 or Normal Image -->
+        <!-- Popup Overlay for close on outside click -->
+<div v-if="activePopup" class="popup-overlay" @click.self="closePopup">
+  <div class="popup-container">
+    <div class="popup-content">
+      <span class="close-btn" @click="closePopup">&times;</span>
+      <div 
+        class="popup-viewer"
+        @mousedown="startDrag($event)"
+        @mousemove="onDrag($event)"
+        @mouseup="endDrag"
+        @mouseleave="endDrag"
+      >
+        <!-- 360 or Normal image -->
+        <img
+          v-if="has360View(currentProduct)"
+          :src="get360ImageForProduct(currentProduct, shoeFrameIndex)"
+          class="product-image"
+          draggable="false"
+        />
+        <img
+          v-else
+          :src="getImageUrl(currentProduct.image)"
+          class="product-image"
+          draggable="false"
+        />
+      </div>
+    </div>
+  </div>
+</div>
+
       </div>
     </div>
 
-    <!-- OLD Quick View Modal -->
+    <!-- OLD Quick View Modal (don't remove as per request) -->
     <!-- <div v-if="showQuickView" class="modal-overlay" @click.self="closeQuickView">
       <div class="modal-content">
         <span class="close-btn" @click="closeQuickView">&times;</span>
-
         <div
           v-if="get360ImageForProduct(selectedProduct, shoeFrameIndex)"
           class="viewer"
@@ -74,6 +91,7 @@
     </div> -->
   </div>
 </template>
+
 
 <script>
 import productsData from '@/data/products.json';
@@ -95,7 +113,7 @@ export default {
       // OLD: Modal state variables (removed)
       // showQuickView: false,
       // selectedProduct: null
-      
+
       // NEW: Hover state management
       activePopup: null, // Tracks which product has active popup
       currentProduct: null // Current product for 360 view
@@ -108,7 +126,7 @@ export default {
     customizeProduct(productId) {
       this.$router.push({ name: 'DesignStudio', query: { id: productId } });
     },
-    
+
     // OLD: Modal control methods (removed)
     // openQuickView(product) {
     //   this.selectedProduct = product;
@@ -118,7 +136,7 @@ export default {
     // closeQuickView() {
     //   this.showQuickView = false;
     // },
-    
+
     // NEW: Hover-based popup control
     showPopup(product) {
       // Only show popup if product has 360 view
@@ -128,11 +146,21 @@ export default {
         this.shoeFrameIndex = 0;
       }
     },
+    showPopup(product) {
+  this.activePopup = product.id;
+  this.currentProduct = product;
+  this.shoeFrameIndex = 0;
+},
     hidePopup() {
       this.activePopup = null;
       this.currentProduct = null;
     },
-    
+    // NEW: Close popup on X or outside click
+closePopup() {
+  this.activePopup = null;
+  this.currentProduct = null;
+},
+
     get360ImageForProduct(product, frameIndex = 0) {
       const key = product?.["360Key"];
       if (!key || !this.images360[key] || this.images360[key].length === 0) {
@@ -282,24 +310,42 @@ export default {
   object-fit: contain;
   user-select: none;
 }
-.popup-container {
-  position: absolute;
-  top: -10px;
-  left: calc(100% + 15px); /* Positions popup to the right of product card */
-  z-index: 100;
-  width: 220px; /* Compact size */
-  height: 220px;
-  pointer-events: none; /* Allows hover through to elements below */
+
+.popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0);
+  z-index: 99;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
+/* Already updated center container */
+.popup-container {
+  position: relative;
+  width: 650px;
+  height: 620px;
+  background: white;
+  pointer-events: auto;
+  border-radius: 10px;
+}
+
+
 
 .popup-content {
   background: white;
   border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15); /* Subtle shadow */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  /* Subtle shadow */
   padding: 10px;
   width: 100%;
   height: 100%;
-  pointer-events: auto; /* Re-enable pointer events inside popup */
+  pointer-events: auto;
+  /* Re-enable pointer events inside popup */
 }
 
 .popup-viewer {
@@ -318,7 +364,8 @@ export default {
 
 /* Position the popup relative to card */
 .product-card {
-  position: relative; /* Needed for absolute positioning of popup */
+  position: relative;
+  /* Needed for absolute positioning of popup */
 }
 
 /* OLD: Modal styles (removed) */
@@ -363,4 +410,46 @@ export default {
 .quickview-btn {
   display: none;
 }
+
+/* NEW: Quick View button styling */
+.quickview-hover-btn {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: none;
+  z-index: 10;
+}
+
+.product-card:hover .quickview-hover-btn {
+  display: block;
+}
+
+.quickview-hover-btn button {
+  background-color: #14ee3170;
+  color: rgb(0, 0, 0);
+  border: none;
+  padding: 10px 10px;
+  font-size: 14px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.quickview-hover-btn button:hover {
+  background-color: #134400;
+  color: white;
+}
+/* NEW: Full screen overlay for popup */
+
+/* Close Button X */
+.close-btn {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 999;
+}
+
 </style>
