@@ -4,21 +4,14 @@
 
     <!-- Product Grid -->
     <div class="product-grid">
-      <div 
-        v-for="product in products" 
-        :key="product.id" 
-        class="product-card"
-        @mouseleave="hidePopup"
-      >
-        <img
-          :src="getImageUrl(product.image)"
-          alt="Product Image"
-          class="product-image"
-        />
+      <div v-for="product in products" :key="product.id" class="product-card" @mouseleave="hidePopup">
+        <!-- old image src -->
+        <!-- <img :src="getImageUrl(product.image)" alt="Product Image" class="product-image" /> -->
+        <img :src="getProductImage(product)" alt="Product Image" class="product-image" />
         <button class="customize-btn" @click="customizeProduct(product.id)">
           Customize
         </button>
-        
+
         <!-- OLD Quick view button (don't remove as per request) -->
         <!-- <button
           v-if="has360View(product)"
@@ -37,34 +30,26 @@
 
         <!-- NEW: Popup Shows Either 360 or Normal Image -->
         <!-- Popup Overlay for close on outside click -->
-<div v-if="activePopup" class="popup-overlay" @click.self="closePopup">
-  <div class="popup-container">
-    <div class="popup-content">
-      <span class="close-btn" @click="closePopup">&times;</span>
-      <div 
-        class="popup-viewer"
-        @mousedown="startDrag($event)"
-        @mousemove="onDrag($event)"
-        @mouseup="endDrag"
-        @mouseleave="endDrag"
-      >
-        <!-- 360 or Normal image -->
-        <img
-          v-if="has360View(currentProduct)"
-          :src="get360ImageForProduct(currentProduct, shoeFrameIndex)"
-          class="product-image"
-          draggable="false"
-        />
-        <img
-          v-else
-          :src="getImageUrl(currentProduct.image)"
-          class="product-image"
-          draggable="false"
-        />
-      </div>
-    </div>
-  </div>
-</div>
+        <div v-if="activePopup" class="popup-overlay" @click.self="closePopup">
+          <div class="popup-container">
+            <div class="popup-content">
+              <span class="close-btn" @click="closePopup">&times;</span>
+              <div class="popup-viewer" @mousedown="startDrag($event)" @mousemove="onDrag($event)" @mouseup="endDrag"
+                @mouseleave="endDrag">
+                <!-- 360 or Normal image old code -->
+                <!-- <img v-if="has360View(currentProduct)" :src="get360ImageForProduct(currentProduct, shoeFrameIndex)"
+                  class="product-image" draggable="false" />
+                <img v-else :src="getImageUrl(currentProduct.image)" class="product-image" draggable="false" /> -->
+
+                <!-- new code -->
+                <img v-if="has360View(currentProduct)" :src="get360ImageForProduct(currentProduct, shoeFrameIndex)"
+                  class="product-image" draggable="false" />
+                <img v-else :src="getProductImage(currentProduct, 'front')" class="product-image" draggable="false" />
+
+              </div>
+            </div>
+          </div>
+        </div>
 
       </div>
     </div>
@@ -123,9 +108,25 @@ export default {
     getImageUrl(filename) {
       return require(`@/assets/${filename}`);
     },
-    customizeProduct(productId) {
-      this.$router.push({ name: 'DesignStudio', query: { id: productId } });
+    getProductImage(product, view = 'front') {
+      return product.views?.[view] ? this.getImageUrl(product.views[view]) : '';
     },
+
+    //Old fucntion of image getting
+    // getImageUrl(filename) {
+    //   return require(`@/assets/${filename}`);
+    // },
+    customizeProduct(productId) {
+  const product = this.products.find(p => p.id === productId);
+  this.$router.push({
+    name: 'DesignStudio',
+    query: {
+      id: productId,
+      image: product.views?.front || ''
+    }
+  });
+},
+
 
     // OLD: Modal control methods (removed)
     // openQuickView(product) {
@@ -147,19 +148,19 @@ export default {
       }
     },
     showPopup(product) {
-  this.activePopup = product.id;
-  this.currentProduct = product;
-  this.shoeFrameIndex = 0;
-},
+      this.activePopup = product.id;
+      this.currentProduct = product;
+      this.shoeFrameIndex = 0;
+    },
     hidePopup() {
       this.activePopup = null;
       this.currentProduct = null;
     },
     // NEW: Close popup on X or outside click
-closePopup() {
-  this.activePopup = null;
-  this.currentProduct = null;
-},
+    closePopup() {
+      this.activePopup = null;
+      this.currentProduct = null;
+    },
 
     get360ImageForProduct(product, frameIndex = 0) {
       const key = product?.["360Key"];
@@ -439,6 +440,7 @@ closePopup() {
   background-color: #134400;
   color: white;
 }
+
 /* NEW: Full screen overlay for popup */
 
 /* Close Button X */
@@ -451,5 +453,4 @@ closePopup() {
   cursor: pointer;
   z-index: 999;
 }
-
 </style>

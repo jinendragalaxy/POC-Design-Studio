@@ -25,29 +25,68 @@ export default {
         }
     },
     methods: {
-        loadProductImage(canvas, url) {
-            fabric.Image.fromURL(url, (img) => {
-                img.scaleToWidth(400);
-                const left = canvas.width / 2 - img.getScaledWidth() / 2;
-                const top = canvas.height / 2 - img.getScaledHeight() / 2;
-                img.set({
-                    selectable: false,
-                    evented: false,
-                    left,
-                    top
-                });
-                canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
-                this.$emit('image-dimensions', {
-                    left,
-                    top,
-                    width: img.getScaledWidth(),
-                    height: img.getScaledHeight()
-                });
-                console.log("hello : ", left, top, img.getScaledWidth(), img.getScaledHeight())
-                this.alignRectanglesWithImage(left, top, img.getScaledWidth(), img.getScaledHeight());
+        // loadProductImage(canvas, url) {
+        //     fabric.Image.fromURL(url, (img) => {
+        //         img.scaleToWidth(400);
+        //         const left = canvas.width / 2 - img.getScaledWidth() / 2;
+        //         const top = canvas.height / 2 - img.getScaledHeight() / 2;
+        //         img.set({
+        //             selectable: false,
+        //             evented: false,
+        //             left,
+        //             top
+        //         });
+        //         canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
+        //         this.$emit('image-dimensions', {
+        //             left,
+        //             top,
+        //             width: img.getScaledWidth(),
+        //             height: img.getScaledHeight()
+        //         });
+        //         console.log("hello : ", left, top, img.getScaledWidth(), img.getScaledHeight())
+        //         this.alignRectanglesWithImage(left, top, img.getScaledWidth(), img.getScaledHeight());
 
-            }, { crossOrigin: 'anonymous' });
-        },
+        //     }, { crossOrigin: 'anonymous' });
+        // },
+
+ loadProductImage(canvas, url) {
+    // Clear previous background image
+    canvas.setBackgroundImage(null, canvas.renderAll.bind(canvas));
+
+    fabric.Image.fromURL(url, (img) => {
+        img.scaleToWidth(400);
+        const left = canvas.width / 2 - img.getScaledWidth() / 2;
+        const top = canvas.height / 2 - img.getScaledHeight() / 2;
+        img.set({
+            selectable: false,
+            evented: false,
+            left,
+            top
+        });
+        // Set new background
+        canvas.setBackgroundImage(img, () => {
+            canvas.renderAll();
+            // Send background properly to back
+            canvas.sendToBack(canvas.backgroundImage);
+
+            // Again make sure clipRect is at back too
+            const clipRect = canvas.getObjects().find(obj => obj.id === 'clip-rect');
+            if (clipRect) {
+                canvas.sendToBack(clipRect);
+            }
+        });
+
+        this.$emit('image-dimensions', {
+            left,
+            top,
+            width: img.getScaledWidth(),
+            height: img.getScaledHeight()
+        });
+
+        this.alignRectanglesWithImage(left, top, img.getScaledWidth(), img.getScaledHeight());
+    }, { crossOrigin: 'anonymous' });
+},
+
 
         alignRectanglesWithImage(imageLeft, imageTop, imageWidth, imageHeight) {
             const canvasObjects = this.canvas.getObjects();

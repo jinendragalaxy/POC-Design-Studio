@@ -11,6 +11,17 @@
       @redo="redo" 
     />
 
+    <div class="view-buttons">
+  <button 
+    v-for="view in availableViews" 
+    :key="view"
+    @click="setView(view)"
+    :class="{ active: view === selectedView }"
+  >
+    {{ view.charAt(0).toUpperCase() + view.slice(1) }}
+  </button>
+</div>
+
     <Popup :visible="showStickerPopup" title="Choose a Sticker" @close="showStickerPopup = false">
       <div class="sticker-list">
         <img 
@@ -76,6 +87,13 @@ export default {
       undoStack: [],
       redoStack: [],
       selectedImage: '',
+      selectedView: 'front',
+      canvasStates: {
+      front: null,
+      back: null,
+      left: null,
+      right: null,
+    },
       imageBounds:null,
       canUndo: false,
       canRedo: false,
@@ -281,6 +299,42 @@ export default {
         this.showRandomPopup = false;
       }, { crossOrigin: 'anonymous' });
     },
+    setView(view) {
+    // Save current canvas state
+    if (this.canvas && this.selectedView) {
+      this.canvasStates[this.selectedView] = this.canvas.toJSON();
+    }
+
+    this.selectedView = view;
+
+    const id = Number(this.$route.query.id);
+    const product = products.find(p => p.id === id);
+
+    if (product?.views?.[view]) {
+      this.selectedImage = require(`@/assets/${product.views[view]}`);
+
+      if (this.canvasStates[view]) {
+        this.canvas.loadFromJSON(this.canvasStates[view], () => {
+          this.canvas.renderAll();
+        });
+      } else {
+        this.canvas.clear();
+        this.loadBackgroundImage(this.selectedImage);
+      }
+    }
+  },
+  loadBackgroundImage(url) {
+    fabric.Image.fromURL(url, (img) => {
+      img.scaleToWidth(400);
+      img.set({
+        selectable: false,
+        evented: false,
+        left: this.canvas.width / 2 - img.getScaledWidth() / 2,
+        top: this.canvas.height / 2 - img.getScaledHeight() / 2,
+      });
+      this.canvas.setBackgroundImage(img, this.canvas.renderAll.bind(this.canvas));
+    }, { crossOrigin: 'anonymous' });
+  },
 
     handleKeyPress(e) {
       if (!this.canvas) return;
@@ -322,22 +376,48 @@ export default {
     },
   },
 
+  // method to change view
+  
+computed: {
+  availableViews() {
+    const id = Number(this.$route.query.id);
+    const product = products.find(p => p.id === id);
+    return product?.views ? Object.keys(product.views) : [];
+  }
+},
+
+
   mounted() {
     window.addEventListener('keydown', this.handleKeyPress);
     window.addEventListener('keydown', this.handleKeyDown);
   },
-  created() {
-    const id = Number(this.$route.query.id); // get ID from URL
+
+//   created() {
+//     const id = Number(this.$route.query.id); // get ID from URL
+//   const product = products.find(p => p.id === id);
+
+//   if (product) {
+//     this.selectedImage = require(`@/assets/${product.image}`);
+//   } else {
+//     console.error('Product not found for id:', id);
+//   }
+// },
+created() {
+  const id = Number(this.$route.query.id);
   const product = products.find(p => p.id === id);
 
   if (product) {
-    this.selectedImage = require(`@/assets/${product.image}`);
+    const frontImage = product.views?.front;
+    if (frontImage) {
+      this.selectedImage = require(`@/assets/${frontImage}`);
+    } else {
+      console.error('No front image found for id:', id);
+    }
   } else {
     console.error('Product not found for id:', id);
   }
-
-
 },
+
 
   beforeDestroy() {
     window.removeEventListener('keydown', this.handleKeyPress);
@@ -366,4 +446,31 @@ export default {
   flex-wrap: wrap;
   justify-content: center;
 }
+.view-buttons {
+  display: flex;
+  flex-direction: column;
+  margin-left: 10px;
+  margin-top: 10px;
+}
+.view-buttons button {
+  margin-bottom: 10px;
+  padding: 6px 12px;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+.view-buttons button {
+  margin-bottom: 10px;
+  padding: 6px 12px;
+  background-color: #f5f5f5;
+  border: 1px solid #ccc;
+  cursor: pointer;
+}
+
+.view-buttons button.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
+
 </style>

@@ -1,10 +1,46 @@
 [
-    { "id": 1, "image": "t-shirt.png" },
-    { "id": 2, "image": "hoodie.png" },
-    { "id": 3, "image": "pant.png" },
-    { "id": 4, "image": "tshirt.png" },
-    { "id": 5, "image": "bag.jpg" },
-    { "id": 6, "image": "Shoe_01.jpg", "360Key":"shoe" }
-   
-  ]
-  
+  {
+    "id": 1,
+    "name": "T-Shirt",
+    "views": {
+      "front": "t-shirt.png"
+    }
+  },
+  {
+    "id": 2,
+    "name": "Hoodie",
+    "views": {
+      "front": "hoodie.png",
+      "back": "hoodie_back.png"
+    }
+  },
+  {
+    "id": 3,
+    "name": "Pant",
+    "views": {
+      "front": "pant.png"
+    }
+  },
+  {
+    "id": 4,
+    "name": "Tshirt",
+    "views": {
+      "front": "tshirt.png"
+    }
+  },
+  {
+    "id": 5,
+    "name": "Bag",
+    "views": {
+      "front": "bag.jpg"
+    }
+  },
+  {
+    "id": 6,
+    "name": "Shoe",
+    "views": {
+      "front": "Shoe_01.jpg"
+    },
+    "360Key": "shoe"
+  }
+]
